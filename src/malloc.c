@@ -1,24 +1,41 @@
+#include "../includes/malloc.h"
 #include <stddef.h>
 #include <sys/mman.h>
 #include <stdio.h>
 
-void	*_malloc(size_t size) {
-	void	*retval;
+t_global global = {NULL, NULL, NULL};
 
-	retval = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS,0 ,0);
-	if (retval == MAP_FAILED) {
-		return NULL;
+t_zone_type	get_type(size_t size) {
+	switch (size) {
+		case size > 0 && size <= 256:
+			return TINY;
+		case size > 256 && size <= 1024:
+			return SMALL;
+		default:
+			return LARGE;
 	}
-	return retval;
 }
 
-int	main() {
-	char *c = _malloc(6);
-	if (!c)
-		return 1;
-	for (size_t i = 0; i < 5; ++i) {
-		c[i] = 48;
+void	check_page(t_zone_type type) {
+	t_memory *mem;
+	if (type == TINY) {
+		mem = &global.tiny;
+	} else if (type == SMALL) {
+		mem = &global.small;
+	} else if (type == LARGE) {
+		mem = &global.large;
 	}
-	c[5] = 0;
-	printf("%s\n", c);
+	if (mem == NULL) {
+		// init
+	}
+}
+
+void	*_malloc(size_t size) {
+	t_memory memory;
+	size_t	aligned_size = ALIGN_16(size);
+	t_zone_type type = get_type(aligned_size);
+	check_page(type);
+}
+
+int	main(int ac, char *av[]) {
 }
