@@ -12,7 +12,7 @@ typedef struct s_page t_page;
 
 #define PROT_FLAGS PROT_READ | PROT_WRITE
 #define MAP_FLAGS MAP_PRIVATE | MAP_ANONYMOUS
-#define MIN_BLOCK_SIZE (sizeof(t_block) + 16)
+#define MIN_BLOCK_SIZE (sizeof(t_block) + 8)
 #define ALIGN(size) ((size) + (ALIGNED - size % ALIGNED))
 
 #include <stdbool.h>
@@ -37,7 +37,7 @@ typedef struct s_page {
 	size_t size;
   size_t used;
   void *alloc;
-	t_block *start;
+	t_block *first;
   t_block *last;
 	t_page *next;
 }	t_page;
