@@ -9,10 +9,10 @@ INC_DIR = includes
 OBJ_DIR = obj
 
 # Source files
-SRCS = $(SRC_DIR)/malloc.c
+SRCS = $(SRC_DIR)/malloc.c $(SRC_DIR)/free.c $(SRC_DIR)/utils.c
 
 # Object files
-OBJS = $(OBJ_DIR)/malloc.o
+OBJS = $(OBJ_DIR)/malloc.o $(OBJ_DIR)/free.o $(OBJ_DIR)/utils.o
 
 # Executable name
 NAME = malloc_test
@@ -30,11 +30,9 @@ $(OBJ_DIR):
 	@mkdir -p $(OBJ_DIR)
 
 # Compile source files
-$(OBJ_DIR)/malloc.o: $(SRC_DIR)/malloc.c | $(OBJ_DIR)
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
 	@echo "$(GREEN)Compiling $<...$(RESET)"
 	@$(CC) $(CFLAGS) -I$(INC_DIR) -c $< -o $@
-
-# Link executable
 $(NAME): $(OBJS)
 	@echo "$(GREEN)Linking $(NAME)...$(RESET)"
 	@$(CC) $(OBJS) $(LDFLAGS) -o $(NAME)

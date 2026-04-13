@@ -13,7 +13,7 @@ typedef struct s_page t_page;
 #define PROT_FLAGS PROT_READ | PROT_WRITE
 #define MAP_FLAGS MAP_PRIVATE | MAP_ANONYMOUS
 #define MIN_BLOCK_SIZE (sizeof(t_block) + 8)
-#define ALIGN(size) ((size) + (ALIGNED - size % ALIGNED))
+#define ALIGN(size) (((size) + (ALIGNED - 1)) & ~(ALIGNED - 1))
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -46,6 +46,7 @@ typedef struct s_memory {
   pthread_mutex_t mutex;
   t_zone_type type;
   t_page *page;
+  t_page *last_page;
 } t_memory;
 
 typedef struct s_global {
@@ -55,5 +56,7 @@ typedef struct s_global {
 }	t_global;
 
 extern t_global global;
+
+void  ft_putstr_fd(char *str, int fd);
 
 #endif

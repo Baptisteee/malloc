@@ -1,0 +1,37 @@
+172,215c
+void *_malloc(size_t size) {
+  size_t aligned_size = ALIGN(size);
+  t_zone_type type = get_type(aligned_size);
+  t_memory *mem = get_memory(type);
+  t_block *block = NULL;
+  t_page *page = NULL;
+
+  if (!mem) return NULL;
+
+  if (type == LARGE) {
+    return (void *) (create_large_alloc(mem, aligned_size) + 1);
+  }
+
+  for (page = mem->page; page != NULL; page = page->next) {
+    block = find_block_with_space(page, aligned_size);
+    if (block) break;
+  }
+
+  if (!block) {
+    page = init_page(mem, size);
+    if (!page) return NULL;
+    
+    set_last_page(mem, page);
+    block = find_block_with_space(page, aligned_size);
+    if (!block) return NULL;
+  }
+
+  if (block->freed && block->size - aligned_size >= MIN_BLOCK_SIZE) {
+    split_freed_block(page, block, aligned_size);
+  }
+
+  block->freed = false;
+  return (void *)(block + 1);
+}
+.
+w

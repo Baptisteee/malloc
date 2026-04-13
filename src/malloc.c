@@ -10,16 +10,19 @@ t_global global = {
   .tiny = { 
     .type = TINY,
     .page = NULL,
+    .last_page = NULL,
     .mutex = PTHREAD_MUTEX_INITIALIZER
   },
   .small = {
     .type = SMALL,
     .page = NULL,
+    .last_page = NULL,
     .mutex = PTHREAD_MUTEX_INITIALIZER
   },
   .large = {
     .type = LARGE,
     .page = NULL,
+    .last_page = NULL,
     .mutex = PTHREAD_MUTEX_INITIALIZER
   }
 };
@@ -59,16 +62,15 @@ static t_memory *get_memory(t_zone_type type) {
 }
 
 static void  set_last_page(t_memory *mem, t_page *page) {
-  t_page *tmp = mem->page;
-
-  if (!tmp) {
+  if (!mem->page) {
     mem->page = page;
-    return;
+    mem->last_page = page;
+  } else {
+    if (mem->last_page) {
+      mem->last_page->next = page;
+    }
+    mem->last_page = page;
   }
-  while (tmp->next) {
-    tmp = tmp->next;
-  }
-  tmp->next = page;
 }
 
 t_page*	init_page(t_memory *mem, size_t size) {
@@ -126,21 +128,25 @@ t_block *find_block_with_space(t_page *page, size_t needed) {
   } else if (page->size - page->used >= needed + sizeof(t_block)) {
     return create_block(page, needed);
   }
-  return find_block_with_space(page->next, needed);
+  return NULL;
 }
 
 t_block *create_large_alloc(t_memory *mem, size_t size) {
-  t_page *new = init_page(mem, size);
+  t_page *new = init_page(mem, size + sizeof(t_block));
   t_block *block;
 
   if (!new) {
     return NULL;
   }
   set_last_page(mem, new);
-  block = (t_block *) ((char *) page->alloc);
-  new->used = size;
+  block = (t_block *) ((char *) new->alloc);
+  new->used = size + sizeof(t_block);
+  new->first = block;
+  new->last = block;
   block->size = size;
   block->freed = false;
+  block->next = NULL;
+  block->prev = NULL;
 
   return block;
 }
@@ -163,39 +169,38 @@ void  split_freed_block(t_page *page, t_block *block, size_t new_size) {
   block->size = new_size;
 }
 
-void	*_malloc(size_t size) {
-	size_t	aligned_size = ALIGN(size);
-  t_memory *mem = get_memory(get_type(aligned_size));
-  t_page *page = mem->page;
-  t_block *block;
+void *_malloc(size_t size) {
+  size_t aligned_size = ALIGN(size);
+  t_zone_type type = get_type(aligned_size);
+  t_memory *mem = get_memory(type);
+  t_block *block = NULL;
+  t_page *page = NULL;
 
-  if (!mem) {
-    return NULL;
-  }
+  if (!mem) return NULL;
+
   if (type == LARGE) {
-    return (void *) (create_large_alloc(page) + 1);
+    return (void *) (create_large_alloc(mem, aligned_size) + 1);
   }
-  if (!page) {
-    page = init_page(mem, size);
-    if (!page) {
-      return NULL;
-    }
-    set_last_page(mem, page);
+
+  for (page = mem->page; page != NULL; page = page->next) {
+    block = find_block_with_space(page, aligned_size);
+    if (block) break;
   }
-  block = find_block_with_space(page, aligned_size);
+
   if (!block) {
     page = init_page(mem, size);
-    if (!page) {
-      return NULL;
-    }
+    if (!page) return NULL;
+    
     set_last_page(mem, page);
-    block = create_block(page, aligned_size);
-  } else if (block->freed == true) {
-    if (block->size - aligned_size >= MIN_BLOCK_SIZE) {
-      split_block(block, aligned_size);
-    }
-    block->freed = false;
+    block = find_block_with_space(page, aligned_size);
+    if (!block) return NULL;
   }
+
+  if (block->freed && block->size - aligned_size >= MIN_BLOCK_SIZE) {
+    split_freed_block(page, block, aligned_size);
+  }
+
+  block->freed = false;
   return (void *)(block + 1);
 }
 
