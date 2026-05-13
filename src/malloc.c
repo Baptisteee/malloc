@@ -147,7 +147,6 @@ t_block *create_large_alloc(t_memory *mem, size_t size) {
   block->freed = false;
   block->next = NULL;
   block->prev = NULL;
-
   return block;
 }
 
@@ -179,7 +178,8 @@ void *_malloc(size_t size) {
   if (!mem) return NULL;
 
   if (type == LARGE) {
-    return (void *) (create_large_alloc(mem, aligned_size) + 1);
+	t_block *large_block = create_large_alloc(mem, aligned_size);
+    return (void *) (large_block == NULL ? NULL : (char *) large_block + 1);
   }
 
   for (page = mem->page; page != NULL; page = page->next) {
@@ -207,5 +207,5 @@ void *_malloc(size_t size) {
 int	main(int ac, char *av[]) {
   (void) ac;
   (void) av;
-  return 1;
+  return 0;
 }
