@@ -27,16 +27,6 @@ t_global global = {
   }
 };
 
-t_zone_type	get_type(size_t size) {
-	if (size <= TINY_ALLOC) {
-			return TINY;
-  }
-	else if (size > TINY_ALLOC && size <= SMALL_ALLOC) {
-			return SMALL;
-  }
-  return LARGE;
-}
-
 static size_t  get_size_from_type(t_zone_type type, size_t size) {
   switch(type) {
     case TINY:
@@ -46,19 +36,6 @@ static size_t  get_size_from_type(t_zone_type type, size_t size) {
     default:
       return size;
   }
-}
-
-static t_memory *get_memory(t_zone_type type) {
-    switch(type) {
-        case TINY:
-            return &global.tiny;
-        case SMALL:
-            return &global.small;
-        case LARGE:
-            return &global.large;
-        default:
-            return NULL;
-    }
 }
 
 static void  set_last_page(t_memory *mem, t_page *page) {
@@ -171,9 +148,9 @@ void  split_freed_block(t_page *page, t_block *block, size_t new_size) {
 void *_malloc(size_t size) {
   size_t aligned_size = ALIGN(size);
   t_zone_type type = get_type(aligned_size);
-  t_memory *mem = get_memory(type);
-  t_block *block = NULL;
-  t_page *page = NULL;
+  t_memory* mem = get_memory(type);
+  t_block* block = NULL;
+  t_page* page = NULL;
 
   if (!mem) return NULL;
 
@@ -182,7 +159,7 @@ void *_malloc(size_t size) {
     return (void *) (large_block == NULL ? NULL : (char *) large_block + 1);
   }
 
-  for (page = mem->page; page != NULL; page = page->next) {
+  for (page = mem->page; page; page = page->next) {
     block = find_block_with_space(page, aligned_size);
     if (block) break;
   }
@@ -204,8 +181,21 @@ void *_malloc(size_t size) {
   return (void *)(block + 1);
 }
 
-int	main(int ac, char *av[]) {
-  (void) ac;
-  (void) av;
+int	main(int, char**) {
+  void* test = _malloc(10);
+  void* test1 = _malloc(10);
+  void* test2 = _malloc(10);
+  void* test3 = _malloc(10);
+  void* test4 = _malloc(10);
+  void* test5 = _malloc(10);
+  void* test6 = _malloc(10);
+
+  (void) test5;
+  _free(test);
+  _free(test1);
+  _free(test2);
+  _free(test4);
+  _free(test3);
+  _free(test6);
   return 0;
 }
