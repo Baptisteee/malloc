@@ -1,44 +1,36 @@
 #include "../includes/malloc_internal.h"
 
+#include <pthread.h>
 #include <stdbool.h>
 #include <stddef.h>
-#include <sys/mman.h>
 #include <stdio.h>
-#include <pthread.h>
+#include <sys/mman.h>
 
-t_global global = {
-  .tiny = { 
-    .type = TINY,
-    .page = NULL,
-    .last_page = NULL,
-    .mutex = PTHREAD_MUTEX_INITIALIZER
-  },
-  .small = {
-    .type = SMALL,
-    .page = NULL,
-    .last_page = NULL,
-    .mutex = PTHREAD_MUTEX_INITIALIZER
-  },
-  .large = {
-    .type = LARGE,
-    .page = NULL,
-    .last_page = NULL,
-    .mutex = PTHREAD_MUTEX_INITIALIZER
-  }
-};
+t_global global = {.tiny = {.type = TINY,
+                            .page = NULL,
+                            .last_page = NULL,
+                            .mutex = PTHREAD_MUTEX_INITIALIZER},
+                   .small = {.type = SMALL,
+                             .page = NULL,
+                             .last_page = NULL,
+                             .mutex = PTHREAD_MUTEX_INITIALIZER},
+                   .large = {.type = LARGE,
+                             .page = NULL,
+                             .last_page = NULL,
+                             .mutex = PTHREAD_MUTEX_INITIALIZER}};
 
-static size_t  get_size_from_type(t_zone_type type, size_t size) {
-  switch(type) {
-    case TINY:
-      return TINY_ZONE;
-    case SMALL:
-      return SMALL_ZONE;
-    default:
-      return size;
+static size_t get_size_from_type(t_zone_type type, size_t size) {
+  switch (type) {
+  case TINY:
+    return TINY_ZONE;
+  case SMALL:
+    return SMALL_ZONE;
+  default:
+    return size;
   }
 }
 
-static void  set_last_page(t_memory *mem, t_page *page) {
+static void set_last_page(t_memory *mem, t_page *page) {
   if (!mem->page) {
     mem->page = page;
     mem->last_page = page;
@@ -50,26 +42,26 @@ static void  set_last_page(t_memory *mem, t_page *page) {
   }
 }
 
-t_page*	init_page(t_memory *mem, size_t size) {
+t_page *init_page(t_memory *mem, size_t size) {
   size_t page_size = get_size_from_type(mem->type, size) + sizeof(t_page);
   t_page *page = mmap(NULL, page_size, PROT_FLAGS, MAP_FLAGS, 0, 0);
- 
+
   if (page == MAP_FAILED) {
     return NULL;
   }
-  page->alloc = (char *) page + sizeof(t_page);
+  page->alloc = (char *)page + sizeof(t_page);
   page->size = page_size - sizeof(t_page);
   page->used = 0;
   page->first = NULL;
   page->next = NULL;
   page->last = NULL;
-  
+
   return page;
 }
 
 t_block *create_block(t_page *page, size_t size) {
-  t_block *block = (t_block *) ((char *) page->alloc + page->used);
-  
+  t_block *block = (t_block *)((char *)page->alloc + page->used);
+
   block->size = size;
   block->freed = false;
   block->next = NULL;
@@ -86,28 +78,6 @@ t_block *create_block(t_page *page, size_t size) {
   return block;
 }
 
-t_block *find_block_with_space(t_page *page, size_t needed) {
-  t_block *tmp;
-
-  if (!page) {
-    return NULL;
-  }
-  
-  tmp = page->first;
-  if (!tmp && page->size - page->used >= needed + sizeof(t_block)) {
-    return create_block(page, needed);
-  }
-  while (tmp && (!tmp->freed || tmp->size < needed)) {
-    tmp = tmp->next;
-  }
-  if (tmp) {
-    return tmp;
-  } else if (page->size - page->used >= needed + sizeof(t_block)) {
-    return create_block(page, needed);
-  }
-  return NULL;
-}
-
 t_block *create_large_alloc(t_memory *mem, size_t size) {
   t_page *new = init_page(mem, size + sizeof(t_block));
   t_block *block;
@@ -116,7 +86,7 @@ t_block *create_large_alloc(t_memory *mem, size_t size) {
     return NULL;
   }
   set_last_page(mem, new);
-  block = (t_block *) ((char *) new->alloc);
+  block = (t_block *)((char *)new->alloc);
   new->used = size + sizeof(t_block);
   new->first = block;
   new->last = block;
@@ -127,8 +97,8 @@ t_block *create_large_alloc(t_memory *mem, size_t size) {
   return block;
 }
 
-void  split_freed_block(t_page *page, t_block *block, size_t new_size) {
-  t_block *new = (t_block *) ((char *) block + new_size + sizeof(t_block));
+void split_freed_block(t_page *page, t_block *block, size_t new_size) {
+  t_block *new = (t_block *)((char *)block + new_size + sizeof(t_block));
 
   new->freed = true;
   new->size = block->size - new_size - sizeof(t_block);
@@ -148,29 +118,33 @@ void  split_freed_block(t_page *page, t_block *block, size_t new_size) {
 void *_malloc(size_t size) {
   size_t aligned_size = ALIGN(size);
   t_zone_type type = get_type(aligned_size);
-  t_memory* mem = get_memory(type);
-  t_block* block = NULL;
-  t_page* page = NULL;
+  t_memory *mem = get_memory(type);
+  t_block *block = NULL;
+  t_page *page = NULL;
 
-  if (!mem) return NULL;
+  if (!mem)
+    return NULL;
 
   if (type == LARGE) {
-	t_block *large_block = create_large_alloc(mem, aligned_size);
-    return (void *) (large_block == NULL ? NULL : (char *) large_block + 1);
+    t_block *large_block = create_large_alloc(mem, aligned_size);
+    return (void *)(large_block == NULL ? NULL : (char *)large_block + 1);
   }
 
   for (page = mem->page; page; page = page->next) {
     block = find_block_with_space(page, aligned_size);
-    if (block) break;
+    if (block)
+      break;
   }
 
   if (!block) {
     page = init_page(mem, size);
-    if (!page) return NULL;
-    
+    if (!page)
+      return NULL;
+
     set_last_page(mem, page);
     block = find_block_with_space(page, aligned_size);
-    if (!block) return NULL;
+    if (!block)
+      return NULL;
   }
 
   if (block->freed && block->size - aligned_size >= MIN_BLOCK_SIZE) {
@@ -181,16 +155,16 @@ void *_malloc(size_t size) {
   return (void *)(block + 1);
 }
 
-int	main(int, char**) {
-  void* test = _malloc(10);
-  void* test1 = _malloc(10);
-  void* test2 = _malloc(10);
-  void* test3 = _malloc(10);
-  void* test4 = _malloc(10);
-  void* test5 = _malloc(10);
-  void* test6 = _malloc(10);
+int main(int, char **) {
+  void *test = _malloc(10);
+  void *test1 = _malloc(10);
+  void *test2 = _malloc(10);
+  void *test3 = _malloc(10);
+  void *test4 = _malloc(10);
+  void *test5 = _malloc(10);
+  void *test6 = _malloc(10);
 
-  (void) test5;
+  (void)test5;
   _free(test);
   _free(test1);
   _free(test2);

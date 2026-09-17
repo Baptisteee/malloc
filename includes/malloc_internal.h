@@ -15,32 +15,32 @@ typedef struct s_page t_page;
 #define MIN_BLOCK_SIZE (sizeof(t_block) + 8)
 #define ALIGN(size) (((size) + (ALIGNED - 1)) & ~(ALIGNED - 1))
 
+#include <pthread.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdlib.h>
-#include <pthread.h>
 
 typedef enum e_zone_type {
-	TINY,
-	SMALL,
-	LARGE,
-}	t_zone_type;
+  TINY,
+  SMALL,
+  LARGE,
+} t_zone_type;
 
 typedef struct s_block {
   size_t size;
   bool freed;
-	t_block *next;
+  t_block *next;
   t_block *prev;
-}	t_block;
+} t_block;
 
 typedef struct s_page {
-	size_t size;
+  size_t size;
   size_t used;
   void *alloc;
-	t_block *first;
+  t_block *first;
   t_block *last;
-	t_page *next;
-}	t_page;
+  t_page *next;
+} t_page;
 
 typedef struct s_memory {
   pthread_mutex_t mutex;
@@ -50,17 +50,19 @@ typedef struct s_memory {
 } t_memory;
 
 typedef struct s_global {
-	t_memory tiny;
-	t_memory small;
-	t_memory large;
-}	t_global;
+  t_memory tiny;
+  t_memory small;
+  t_memory large;
+} t_global;
 
 extern t_global global;
 
 void ft_putstr_fd(char *str, int fd);
 t_zone_type get_type(size_t size);
-t_block* get_first_block(t_block* block);
-t_memory* get_memory(t_zone_type type);
-void  _free(void *ptr);
-
+t_block *get_first_block(t_block *block);
+t_memory *get_memory(t_zone_type type);
+void _free(void *ptr);
+bool is_page_empty(t_page *page);
+t_block *find_block_with_space(t_page *page, size_t size);
+t_block *create_block(t_page *page, size_t size);
 #endif

@@ -1,0 +1,66 @@
+[
+ {
+  "directory": "/home/babodere/prog/malloc",
+  "arguments": [
+   "gcc",
+   "-Wall",
+   "-Wextra",
+   "-Werror",
+   "-g",
+   "-Iincludes",
+   "-c",
+   "src/free/free_utils.c",
+   "-o",
+   "obj/free/free_utils.o"
+  ],
+  "file": "src/free/free_utils.c"
+ },
+ {
+  "directory": "/home/babodere/prog/malloc",
+  "arguments": [
+   "gcc",
+   "-Wall",
+   "-Wextra",
+   "-Werror",
+   "-g",
+   "-Iincludes",
+   "-c",
+   "src/malloc.c",
+   "-o",
+   "obj/malloc.o"
+  ],
+  "file": "src/malloc.c"
+ },
+ {
+  "directory": "/home/babodere/prog/malloc",
+  "arguments": [
+   "gcc",
+   "-Wall",
+   "-Wextra",
+   "-Werror",
+   "-g",
+   "-Iincludes",
+   "-c",
+   "src/free/free.c",
+   "-o",
+   "obj/free/free.o"
+  ],
+  "file": "src/free/free.c"
+ },
+ {
+  "directory": "/home/babodere/prog/malloc",
+  "arguments": [
+   "gcc",
+   "-Wall",
+   "-Wextra",
+   "-Werror",
+   "-g",
+   "-Iincludes",
+   "-c",
+   "src/utils.c",
+   "-o",
+   "obj/utils.o"
+  ],
+  "file": "src/utils.c"
+ }
+]
