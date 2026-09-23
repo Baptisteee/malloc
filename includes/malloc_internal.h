@@ -61,6 +61,7 @@ void ft_putstr_fd(char *str, int fd);
 t_zone_type get_type(size_t size);
 t_block *get_first_block(t_block *block);
 t_memory *get_memory(t_zone_type type);
+void *_malloc(size_t size);
 void _free(void *ptr);
 bool is_page_empty(t_page *page);
 t_block *find_block_with_space(t_page *page, size_t size);

@@ -1,4 +1,5 @@
 #include "../includes/malloc_internal.h"
+#include <signal.h>
 #include <stdio.h>
 #include <sys/mman.h>
 
@@ -48,12 +49,11 @@ void _free(void *ptr) {
   if (!ptr) {
     return;
   }
-  t_block *block = (t_block *)((char *)ptr - sizeof(t_block));
-
-  if ((size_t)block % 8 != 0) {
+  if ((size_t)ptr % 8 != 0) {
     ft_putstr_fd("free(): invalid pointer\n", 2);
-    return;
+    raise(SIGABRT);
   }
+  t_block *block = (t_block *)((char *)ptr - sizeof(t_block));
   t_page *page = (t_page *)((char *)get_first_block(block) - sizeof(t_page));
   t_memory *memory = get_memory(get_type(block->size));
   if (memory->type == LARGE) {
